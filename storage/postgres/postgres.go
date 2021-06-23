@@ -2,9 +2,6 @@ package postgres
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"time"
 
 	"github.com/go-pg/pg/v10"
 	"github.com/sirupsen/logrus"
@@ -20,7 +17,7 @@ type DataStore struct {
 	db     *pg.DB
 }
 
-func New(cfg configuration.DB) (*DataStore, error) {
+func New(cfg configuration.DB, migrations configuration.Migrations) (*DataStore, error) {
 	logger := logrus.New().WithField("layer", "postgres")
 
 	opt, err := pg.ParseURL(cfg.URL)
@@ -33,7 +30,10 @@ func New(cfg configuration.DB) (*DataStore, error) {
 		return nil, err
 	}
 
-	// todo: migrations
+	// todo: flag for run migrations
+	if err := runMigrations(db, logger, migrations.Directory); err != nil {
+		return nil, err
+	}
 
 	store := &DataStore{
 		cfg:    cfg,
@@ -41,27 +41,6 @@ func New(cfg configuration.DB) (*DataStore, error) {
 		db:     db,
 	}
 	return store, nil
-}
-
-func pingLoop(db *pg.DB, logger *logrus.Entry) error {
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
-
-	timeout := 60 * time.Second // can be in cfg
-
-	for {
-		err := db.Ping(context.Background())
-		if err == nil {
-			return nil
-		}
-
-		select {
-		case <-time.After(timeout):
-			return errors.New(fmt.Sprintf("db ping failed after %s timeout", timeout))
-		case <-ticker.C:
-			logger.Warn("db ping failed, sleep and retry")
-		}
-	}
 }
 
 func (s *DataStore) Create(obj models.User) (models.User, error) {
@@ -99,4 +78,19 @@ func (s *DataStore) Delete(id uint64) (bool, error) {
 		return false, err
 	}
 	return res.RowsAffected() > 0, nil
+}
+
+func (s *DataStore) List(filter models.Filter) ([]models.User, error) {
+	var result []models.User
+	query := s.db.Model(&result).Order("id ASC")
+
+	if filter.Country != "" {
+		query = query.Where("country = %s", filter.Country)
+	}
+	err := query.Select()
+	return result, err
+}
+
+func (s *DataStore) Stop(ctx context.Context) error {
+	return s.db.Close()
 }
