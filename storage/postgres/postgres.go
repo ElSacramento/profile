@@ -18,7 +18,7 @@ type DataStore struct {
 }
 
 func New(cfg configuration.DB, migrations configuration.Migrations) (*DataStore, error) {
-	logger := logrus.New().WithField("layer", "postgres")
+	logger := logrus.WithField("layer", "postgres")
 
 	opt, err := pg.ParseURL(cfg.URL)
 	if err != nil {
@@ -85,7 +85,7 @@ func (s *DataStore) List(filter models.Filter) ([]models.User, error) {
 	query := s.db.Model(&result).Order("id ASC")
 
 	if filter.Country != "" {
-		query = query.Where("country = %s", filter.Country)
+		query = query.Where("country=?", filter.Country)
 	}
 	err := query.Select()
 	return result, err

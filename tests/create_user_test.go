@@ -1,9 +1,6 @@
 package tests
 
 import (
-	"bytes"
-	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"testing"
 
@@ -23,7 +20,7 @@ func TestCreateUser(t *testing.T) {
 			Email:     "test@mail.ru",
 			Country:   "sweden",
 		}
-		created := CreateUserWithResponse(t, request)
+		created := testutils.CreateUserWithResponse(t, request)
 		expected := dto.User{
 			ID:        1,
 			FirstName: "fname",
@@ -46,7 +43,7 @@ func TestCreateUser_WrongParams(t *testing.T) {
 				Nickname:  "nick",
 				Country:   "sweden",
 			}
-			response := CreateUserWithErrorResponse(t, request, http.StatusUnprocessableEntity)
+			response := testutils.CreateUserWithErrorResponse(t, request, http.StatusUnprocessableEntity)
 			require.Contains(t, response.Message, "empty")
 		})
 		t.Run("wrong country", func(t *testing.T) {
@@ -55,52 +52,8 @@ func TestCreateUser_WrongParams(t *testing.T) {
 				Password: "pwd",
 				Country:  "blabla",
 			}
-			response := CreateUserWithErrorResponse(t, request, http.StatusUnprocessableEntity)
+			response := testutils.CreateUserWithErrorResponse(t, request, http.StatusUnprocessableEntity)
 			require.Contains(t, response.Message, "wrong country")
 		})
 	})
-}
-
-func CreateUserWithResponse(t *testing.T, createUser dto.CreateUser) dto.User {
-	body, err := json.Marshal(createUser)
-	require.NoError(t, err)
-
-	request, err := http.NewRequest(http.MethodPost, "http://localhost:8080/users", bytes.NewReader(body))
-	require.NoError(t, err)
-
-	request.Header.Add("Content-Type", "application/json")
-
-	response, err := http.DefaultClient.Do(request)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, response.StatusCode)
-
-	bodyBytes, err := ioutil.ReadAll(response.Body)
-	defer response.Body.Close()
-
-	var user dto.User
-	err = json.Unmarshal(bodyBytes, &user)
-	require.NoError(t, err)
-
-	return user
-}
-
-func CreateUserWithErrorResponse(t *testing.T, createUser dto.CreateUser, status int) dto.ErrorResponse {
-	body, err := json.Marshal(createUser)
-	require.NoError(t, err)
-
-	request, err := http.NewRequest(http.MethodPost, "/users", bytes.NewReader(body))
-	require.NoError(t, err)
-
-	response, err := http.DefaultClient.Do(request)
-	require.NoError(t, err)
-	require.Equal(t, status, response.StatusCode)
-
-	bodyBytes, err := ioutil.ReadAll(response.Body)
-	defer response.Body.Close()
-
-	var errResponse dto.ErrorResponse
-	err = json.Unmarshal(bodyBytes, &errResponse)
-	require.NoError(t, err)
-
-	return errResponse
 }

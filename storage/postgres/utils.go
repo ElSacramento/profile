@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -25,7 +24,7 @@ func pingLoop(db *pg.DB, logger *logrus.Entry) error {
 
 		select {
 		case <-time.After(timeout):
-			return errors.New(fmt.Sprintf("db ping failed after %s timeout", timeout))
+			return fmt.Errorf("db ping failed after %s timeout", timeout)
 		case <-ticker.C:
 			logger.Warn("db ping failed, sleep and retry")
 		}
@@ -49,9 +48,9 @@ func runMigrations(db *pg.DB, logger *logrus.Entry, directory string) error {
 		return err
 	}
 	if newVersion != oldVersion {
-		logger.Infof("Migrated from version %d to %d\n", oldVersion, newVersion)
+		logger.Infof("Migrated from version %d to %d", oldVersion, newVersion)
 	} else {
-		logger.Infof("Version is %d after up migrations\n", oldVersion)
+		logger.Infof("Version is %d after up migrations", oldVersion)
 	}
 	return nil
 }

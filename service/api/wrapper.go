@@ -19,7 +19,7 @@ type ServerWrapper struct {
 }
 
 func NewServerWrapper(cfg configuration.API, db storage.Storage) *ServerWrapper {
-	logger := logrus.New().WithField("layer", "http")
+	logger := logrus.WithField("layer", "http")
 
 	wrapper := &ServerWrapper{
 		srv:    NewServer(cfg, db, logger),
@@ -44,7 +44,7 @@ func (s *ServerWrapper) UpdateUser(ctx echo.Context) error {
 	idParam := ctx.Param("id")
 	id, err := strconv.ParseInt(idParam, 10, 64)
 	if err != nil {
-		s.logger.Errorf("wrong user id: %s", err.Error())
+		s.logger.WithError(err).Error("wrong user id")
 		return ctx.JSON(http.StatusBadRequest, "wrong user id")
 	}
 	return s.srv.UpdateUser(ctx, uint64(id))
@@ -54,7 +54,7 @@ func (s *ServerWrapper) User(ctx echo.Context) error {
 	idParam := ctx.Param("id")
 	id, err := strconv.ParseInt(idParam, 10, 64)
 	if err != nil {
-		s.logger.Errorf("wrong user id: %s", err.Error())
+		s.logger.WithError(err).Error("wrong user id")
 		return ctx.JSON(http.StatusBadRequest, "wrong user id")
 	}
 	return s.srv.User(ctx, uint64(id))
@@ -64,7 +64,7 @@ func (s *ServerWrapper) DeleteUser(ctx echo.Context) error {
 	idParam := ctx.Param("id")
 	id, err := strconv.ParseInt(idParam, 10, 64)
 	if err != nil {
-		s.logger.Errorf("wrong user id: %s", err.Error())
+		s.logger.WithError(err).Error("wrong user id")
 		return ctx.JSON(http.StatusBadRequest, "wrong user id")
 	}
 	return s.srv.DeleteUser(ctx, uint64(id))

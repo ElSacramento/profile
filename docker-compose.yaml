@@ -1,0 +1,26 @@
+version: "2"
+
+services:
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: "root"
+      POSTGRES_PASSWORD: "toor"
+      POSTGRES_DB: "profile"
+    ports:
+      - 5434:5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  api:
+    image: profile:local
+    environment:
+      PROFILE_API_LISTEN: "0.0.0.0:8080"
+      PROFILE_DB_URL: "postgresql://root:toor@db/profile?sslmode=disable&application_name=profile"
+    build:
+      context: .
+    depends_on:
+      - "db"
+    ports:
+      - "8080:8080"
+volumes:
+  pgdata:

@@ -10,6 +10,7 @@ Simple CRUD service for users with ability to notify other subscribed services.
 - Prometheus metrics.
 - TraceID/RequestID in logs and other logging improvements, that can be useful. 
 - Postgres tests.
-- REST API generated specification.
+- REST API generated specification. 
+- Write country service or find the better one.
 
 ## How to run locally:

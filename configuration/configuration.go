@@ -1,11 +1,10 @@
 package configuration
 
 import (
-	"io/ioutil"
 	"time"
 
+	"github.com/spf13/viper"
 	"gopkg.in/go-playground/validator.v9"
-	"gopkg.in/yaml.v2"
 )
 
 type API struct {
@@ -27,16 +26,20 @@ type Cfg struct {
 	Migrations  Migrations    `yaml:"migrations" validate:"required"`
 }
 
-func ParseConfig(cfgPath *string) (Cfg, error) {
-	data, err := ioutil.ReadFile(*cfgPath)
-	if err != nil {
-		return Cfg{}, err
+// todo: think about smth more useful
+func New(vp *viper.Viper) Cfg {
+	return Cfg{
+		API: API{
+			Listen: vp.GetString("api_listen"),
+		},
+		DB: DB{
+			URL: vp.GetString("db_url"),
+		},
+		StopTimeout: vp.GetDuration("stop_timeout"),
+		Migrations: Migrations{
+			Directory: vp.GetString("migrations_directory"),
+		},
 	}
-	var cfg Cfg
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return Cfg{}, err
-	}
-	return cfg, nil
 }
 
 func (c *Cfg) ValidateConfig() error {

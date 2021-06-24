@@ -30,8 +30,10 @@ var PostgresOptions = pg.Options{
 var PgURL = fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable&application_name=%s",
 	PostgresOptions.User, PostgresOptions.Password, PostgresOptions.Addr, PostgresOptions.Database, PostgresOptions.ApplicationName)
 
+var ServerAddr = "localhost:8080"
+
 func NewTestService(cfg configuration.Cfg, store storage.Storage) (*service.Service, error) {
-	logger := logrus.New().WithField("layer", "service")
+	logger := logrus.WithField("layer", "service")
 
 	e := echo.New()
 	e.Use(
@@ -52,34 +54,14 @@ func NewTestService(cfg configuration.Cfg, store storage.Storage) (*service.Serv
 	return srv, nil
 }
 
-func CreateTestDatabase(cfg configuration.DB) error {
-	opt, err := pg.ParseURL(cfg.URL)
-	if err != nil {
-		return err
-	}
-
-	db := pg.Connect(opt)
-	_, err = db.Exec("CREATE DATABASE %s", opt.Database)
-	if err != nil {
-		return err
-	}
-	if err := db.Close(); err != nil {
-		return err
-	}
-	return nil
-}
-
 func RunWithServer(t *testing.T, fn func()) {
 	ctx := context.Background()
 	cfg := configuration.Cfg{
-		API:         configuration.API{Listen: ":8080"},
+		API:         configuration.API{Listen: ServerAddr},
 		DB:          configuration.DB{URL: PgURL},
 		StopTimeout: time.Second * 60,
 		Migrations:  configuration.Migrations{Directory: "../storage/postgres/migrations"},
 	}
-
-	// err := CreateTestDatabase(cfg.DB)
-	// require.NoError(t, err)
 
 	store, err := postgres.New(cfg.DB, cfg.Migrations)
 	require.NoError(t, err)

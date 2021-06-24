@@ -7,7 +7,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/labstack/gommon/log"
 	"github.com/sirupsen/logrus"
 
 	"github.com/profile/configuration"
@@ -26,7 +25,7 @@ type Service struct {
 }
 
 func New(cfg configuration.Cfg) (*Service, error) {
-	logger := logrus.New().WithField("layer", "service")
+	logger := logrus.WithField("layer", "service")
 
 	store, err := postgres.New(cfg.DB, cfg.Migrations)
 	if err != nil {
@@ -53,7 +52,7 @@ func New(cfg configuration.Cfg) (*Service, error) {
 }
 
 func (s *Service) Start() error {
-	s.Logger.Infof("Starting service\n")
+	s.Logger.Info("Starting service")
 
 	if s.EchoServer == nil || s.HttpHandler == nil {
 		return errors.New("impossible state: empty http server")
@@ -65,13 +64,13 @@ func (s *Service) Start() error {
 
 	go func() {
 		defer func() {
-			s.Logger.Infof("HTTP server goroutine stopped")
+			s.Logger.Info("HTTP server goroutine stopped")
 		}()
 
 		s.Logger.Infof("Starting http on: %s", s.Cfg.API.Listen)
 		err := s.EchoServer.Start(s.Cfg.API.Listen)
 		if err != nil && err != http.ErrServerClosed {
-			s.Logger.Fatalf("Failed to serve: ", err.Error())
+			s.Logger.WithError(err).Fatalln("Failed to serve")
 		}
 	}()
 
@@ -79,10 +78,10 @@ func (s *Service) Start() error {
 }
 
 func (s *Service) Stop(ctx context.Context) error {
-	s.Logger.Info("Stopping service\n")
+	s.Logger.Info("Stopping service")
 
 	if s.EchoServer != nil {
-		log.Infof("Stopping http on: %s", s.Cfg.API.Listen)
+		s.Logger.Infof("Stopping http on: %s", s.Cfg.API.Listen)
 		err := s.EchoServer.Shutdown(ctx)
 		if err != nil {
 			return err
@@ -103,12 +102,12 @@ func (s *Service) Stop(ctx context.Context) error {
 		}
 	}
 
-	s.Logger.Info("Service stopped\n")
+	s.Logger.Info("Service stopped")
 	return nil
 }
 
 func (s *Service) ForceStop() error {
-	s.Logger.Info("Force stop service\n")
+	s.Logger.Info("Force stop service")
 
 	if s.EchoServer != nil {
 		err := s.EchoServer.Close()
