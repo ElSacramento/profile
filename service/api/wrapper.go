@@ -10,6 +10,8 @@ import (
 
 	"github.com/profile/configuration"
 	"github.com/profile/dto"
+	"github.com/profile/middleware"
+	"github.com/profile/notifier"
 	"github.com/profile/storage"
 )
 
@@ -18,11 +20,11 @@ type ServerWrapper struct {
 	logger *logrus.Entry
 }
 
-func NewServerWrapper(cfg configuration.API, db storage.Storage) *ServerWrapper {
-	logger := logrus.WithField("layer", "http")
+func NewServerWrapper(ctx context.Context, cfg configuration.API, db storage.Storage, notificator notifier.Notifier) *ServerWrapper {
+	_, logger := middleware.LoggerFromContext(ctx)
 
 	wrapper := &ServerWrapper{
-		srv:    NewServer(cfg, db, logger),
+		srv:    NewServer(cfg, db, logger, notificator),
 		logger: logger,
 	}
 	return wrapper
@@ -34,6 +36,8 @@ func (s *ServerWrapper) RegisterHandlers(e *echo.Echo) {
 	e.POST("/users/:id", s.UpdateUser)
 	e.DELETE("/users/:id", s.DeleteUser)
 	e.GET("/users", s.Users)
+
+	e.GET("/healthcheck", s.HealthCheck)
 }
 
 func (s *ServerWrapper) CreateUser(ctx echo.Context) error {
@@ -81,6 +85,10 @@ func (s *ServerWrapper) Users(ctx echo.Context) error {
 	}
 
 	return s.srv.Users(ctx, filter)
+}
+
+func (s *ServerWrapper) HealthCheck(ctx echo.Context) error {
+	return s.srv.Users(ctx, dto.Filter{})
 }
 
 func (s *ServerWrapper) Stop(ctx context.Context) error {

@@ -27,7 +27,7 @@ func TestMain(m *testing.M) {
 		Env: []string{
 			"POSTGRES_USER=" + testutils.PostgresOptions.User,
 			"POSTGRES_PASSWORD=" + testutils.PostgresOptions.Password,
-			"POSTGRES_DB=" + testutils.PostgresOptions.Database,
+			"POSTGRES_DB=postgres", // default
 		},
 		PortBindings: map[docker.Port][]docker.PortBinding{
 			"5432/tcp": {{HostIP: "0.0.0.0", HostPort: "5432"}},
@@ -41,11 +41,11 @@ func TestMain(m *testing.M) {
 	}
 
 	var db *pg.DB
-	defer func() {
+	stopper := func() {
 		if err := db.Close(); err != nil {
 			logrus.WithError(err).Warn("Failed to close connection to postgres")
 		}
-	}()
+	}
 
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	if err = pool.Retry(func() error {
@@ -72,11 +72,13 @@ func TestMain(m *testing.M) {
 		s := <-gracefulStop
 		logrus.Infof("Got signal: %v", s)
 
+		stopper()
 		cleaner()
 		os.Exit(1)
 	}()
 
 	code := m.Run()
+	stopper()
 	cleaner()
 	os.Exit(code)
 }

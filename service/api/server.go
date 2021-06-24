@@ -9,24 +9,27 @@ import (
 
 	"github.com/profile/configuration"
 	"github.com/profile/dto"
+	"github.com/profile/notifier"
 	"github.com/profile/storage"
 )
 
 type Server struct {
-	cfg     configuration.API
-	db      storage.Storage
-	logger  *logrus.Entry
-	country *gountries.Query
+	cfg         configuration.API
+	db          storage.Storage
+	logger      *logrus.Entry
+	country     *gountries.Query
+	notificator notifier.Notifier
 }
 
-func NewServer(cfg configuration.API, db storage.Storage, logger *logrus.Entry) *Server {
+func NewServer(cfg configuration.API, db storage.Storage, logger *logrus.Entry, notificator notifier.Notifier) *Server {
 	countryConverter := gountries.New()
 
 	return &Server{
-		cfg:     cfg,
-		db:      db,
-		logger:  logger,
-		country: countryConverter,
+		cfg:         cfg,
+		db:          db,
+		logger:      logger,
+		country:     countryConverter,
+		notificator: notificator,
 	}
 }
 
@@ -59,6 +62,7 @@ func (s *Server) CreateUser(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, dto.ErrorResponse{Message: "failed to create user"})
 	}
 
+	s.notificator.Push(created.ID, notifier.Create)
 	return ctx.JSON(http.StatusOK, dto.UserFromDatabase(created))
 }
 
@@ -95,6 +99,7 @@ func (s *Server) UpdateUser(ctx echo.Context, id uint64) error {
 		return ctx.JSON(http.StatusInternalServerError, dto.ErrorResponse{Message: "failed to update user"})
 	}
 
+	s.notificator.Push(updated.ID, notifier.Update)
 	return ctx.JSON(http.StatusOK, dto.UserFromDatabase(updated))
 }
 
@@ -109,6 +114,8 @@ func (s *Server) DeleteUser(ctx echo.Context, id uint64) error {
 		s.logger.Error(errMsg)
 		return ctx.JSON(http.StatusNotFound, struct{}{})
 	}
+
+	s.notificator.Push(id, notifier.Delete)
 	return ctx.JSON(http.StatusNoContent, struct{}{})
 }
 
@@ -123,6 +130,7 @@ func (s *Server) User(ctx echo.Context, id uint64) error {
 		return ctx.JSON(http.StatusInternalServerError, dto.ErrorResponse{Message: "failed to get user"})
 	}
 
+	s.notificator.Push(dbUser.ID, notifier.Get)
 	return ctx.JSON(http.StatusOK, dto.UserFromDatabase(dbUser))
 }
 

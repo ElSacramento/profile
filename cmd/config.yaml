@@ -1,7 +1,9 @@
 db:
-  url: "postgres://root:toor@localhost:5432/profile?sslmode=disable&application_name=profile"
+  url:
 api:
-  listen: "localhost:8080"
+  listen:
 stop_timeout: 30s
 migrations:
   directory: "/etc/migrations"
+notify:
+  - addr: "localhost:180001"

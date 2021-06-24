@@ -20,3 +20,7 @@ test:
 .PHONY: lint
 lint:
 	golangci-lint run
+
+.PHONY: generate
+generate:
+	protoc ./notifier/generated/notifier.proto --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative

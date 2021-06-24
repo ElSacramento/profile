@@ -3,43 +3,33 @@ package configuration
 import (
 	"time"
 
-	"github.com/spf13/viper"
 	"gopkg.in/go-playground/validator.v9"
 )
 
 type API struct {
-	Listen string `yaml:"listen" validate:"required"`
+	Listen string `validate:"required"`
 }
 
 type DB struct {
-	URL string `yaml:"url" validate:"required"`
+	URL string `validate:"required"`
 }
 
 type Migrations struct {
-	Directory string `yaml:"directory" validate:"required"`
+	Directory string `validate:"required"`
 }
+
+type NotifyAddr struct {
+	Addr string
+}
+
+type Notify []NotifyAddr
 
 type Cfg struct {
-	API         API           `yaml:"api" validate:"required"`
-	DB          DB            `yaml:"db" validate:"required"`
-	StopTimeout time.Duration `yaml:"stop_timeout" validate:"required"`
-	Migrations  Migrations    `yaml:"migrations" validate:"required"`
-}
-
-// todo: think about smth more useful
-func New(vp *viper.Viper) Cfg {
-	return Cfg{
-		API: API{
-			Listen: vp.GetString("api_listen"),
-		},
-		DB: DB{
-			URL: vp.GetString("db_url"),
-		},
-		StopTimeout: vp.GetDuration("stop_timeout"),
-		Migrations: Migrations{
-			Directory: vp.GetString("migrations_directory"),
-		},
-	}
+	API         API           `validate:"required"`
+	DB          DB            `validate:"required"`
+	StopTimeout time.Duration `json:"stop_timeout" validate:"required"`
+	Migrations  Migrations    `validate:"required"`
+	Notify      Notify
 }
 
 func (c *Cfg) ValidateConfig() error {

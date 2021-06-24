@@ -10,6 +10,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/profile/configuration"
+	middleware2 "github.com/profile/middleware"
+	"github.com/profile/notifier"
+	"github.com/profile/notifier/grpc"
 	"github.com/profile/service/api"
 	"github.com/profile/storage"
 	"github.com/profile/storage/postgres"
@@ -20,17 +23,20 @@ type Service struct {
 	Storage     storage.Storage
 	HttpHandler *api.ServerWrapper
 	EchoServer  *echo.Echo
+	Notifier    notifier.Notifier
 
 	Logger *logrus.Entry
 }
 
-func New(cfg configuration.Cfg) (*Service, error) {
-	logger := logrus.WithField("layer", "service")
+func New(ctx context.Context, cfg configuration.Cfg) (*Service, error) {
+	ctx, logger := middleware2.LoggerFromContext(ctx)
 
-	store, err := postgres.New(cfg.DB, cfg.Migrations)
+	store, err := postgres.New(ctx, cfg.DB, cfg.Migrations)
 	if err != nil {
 		return &Service{}, err
 	}
+
+	pushNotificator := grpc.New(ctx, cfg.Notify)
 
 	e := echo.New()
 	e.Use(
@@ -38,7 +44,7 @@ func New(cfg configuration.Cfg) (*Service, error) {
 		middleware.Recover(),
 	)
 
-	server := api.NewServerWrapper(cfg.API, store)
+	server := api.NewServerWrapper(ctx, cfg.API, store, pushNotificator)
 	server.RegisterHandlers(e)
 
 	service := &Service{
@@ -47,6 +53,7 @@ func New(cfg configuration.Cfg) (*Service, error) {
 		Logger:      logger,
 		EchoServer:  e,
 		HttpHandler: server,
+		Notifier:    pushNotificator,
 	}
 	return service, nil
 }
@@ -100,6 +107,10 @@ func (s *Service) Stop(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	if s.Notifier != nil {
+		s.Notifier.Stop()
 	}
 
 	s.Logger.Info("Service stopped")

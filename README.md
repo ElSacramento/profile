@@ -12,5 +12,13 @@ Simple CRUD service for users with ability to notify other subscribed services.
 - Postgres tests.
 - REST API generated specification. 
 - Write country service or find the better one.
+- GithubActions to run linter, tests, build docker image.
+
+## Run tests and linter
+`make test lint`
 
 ## How to run locally:
+```
+docker compose build
+docker compose up
+```

@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+option go_package = "profile/notifier/generated";
+
+package notifier;
+
+service Notifier {
+  rpc Push (NotificationRequest) returns (NotificationReply) {}
+}
+
+message NotificationRequest {
+  uint64 id = 1;
+  string operation = 2;
+}
+
+message NotificationReply {
+  string message = 1;
+}

@@ -7,6 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/profile/configuration"
+	"github.com/profile/middleware"
 	"github.com/profile/models"
 	"github.com/profile/storage"
 )
@@ -17,8 +18,8 @@ type DataStore struct {
 	db     *pg.DB
 }
 
-func New(cfg configuration.DB, migrations configuration.Migrations) (*DataStore, error) {
-	logger := logrus.WithField("layer", "postgres")
+func New(ctx context.Context, cfg configuration.DB, migrations configuration.Migrations) (*DataStore, error) {
+	_, logger := middleware.LoggerFromContext(ctx)
 
 	opt, err := pg.ParseURL(cfg.URL)
 	if err != nil {
