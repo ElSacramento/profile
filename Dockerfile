@@ -15,8 +15,6 @@ RUN make vendor build
 FROM ubuntu:latest
 
 COPY --from=builder /build/bin/* /usr/local/bin/
-COPY --from=builder /build/cmd/config.yaml /etc/config.yaml
 COPY --from=builder /build/storage/postgres/migrations /etc/migrations
 
 ENTRYPOINT ["profile"]
-CMD ["-cfg", "/etc/config.yaml"]

@@ -56,6 +56,7 @@ func TestMain(m *testing.M) {
 		logrus.WithError(err).Fatalln("Could not connect to docker")
 	}
 
+	// todo: cleaning doesn't work during debug, need to fix it
 	cleaner := func() {
 		// When you're done, kill and remove the container
 		logrus.Info("Cleaning resource")

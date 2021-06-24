@@ -22,7 +22,7 @@ func (s *server) Push(ctx context.Context, in *generated.NotificationRequest) (*
 // For notification manual testing
 func main() {
 	// port from config.yaml
-	lis, err := net.Listen("tcp", ":180001")
+	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
 		logrus.WithError(err).Fatalln("failed to listen")
 	}

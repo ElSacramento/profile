@@ -1,5 +1,5 @@
 # Profile
-Simple CRUD service for users with ability to notify other subscribed services.
+Simple CRUD service for users with the ability to notify other subscribed services.
 
 ## Assumptions:
 - User email and password are required fields.
@@ -12,7 +12,8 @@ Simple CRUD service for users with ability to notify other subscribed services.
 - Postgres tests.
 - REST API generated specification. 
 - Write country service or find the better one.
-- GithubActions to run linter, tests, build docker image.
+- GithubActions to run linter, tests, build a docker image.
+- Limit param for /users.
 
 ## Run tests and linter
 `make test lint`

@@ -1,8 +1,10 @@
 package configuration
 
 import (
+	"strings"
 	"time"
 
+	"github.com/spf13/viper"
 	"gopkg.in/go-playground/validator.v9"
 )
 
@@ -18,18 +20,49 @@ type Migrations struct {
 	Directory string `validate:"required"`
 }
 
-type NotifyAddr struct {
-	Addr string
-}
-
-type Notify []NotifyAddr
+type Notify []string
 
 type Cfg struct {
 	API         API           `validate:"required"`
 	DB          DB            `validate:"required"`
-	StopTimeout time.Duration `json:"stop_timeout" validate:"required"`
+	StopTimeout time.Duration `validate:"required"`
 	Migrations  Migrations    `validate:"required"`
 	Notify      Notify
+}
+
+func New(vp *viper.Viper) Cfg {
+	subscribers := make([]string, 0)
+	notify := vp.GetString("notify")
+	if notify != "" {
+		notify = strings.TrimLeft(notify, "[")
+		notify = strings.TrimRight(notify, "]")
+		subscribers = strings.Split(notify, ",")
+	}
+
+	timeout := vp.GetDuration("stop_timeout")
+	if timeout == 0 {
+		timeout = time.Second * 30
+	}
+
+	migrationsDir := vp.GetString("migrations_directory")
+	if migrationsDir == "" {
+		migrationsDir = "/etc/migrations"
+	}
+
+	cfg := Cfg{
+		API: API{
+			Listen: vp.GetString("api_listen"),
+		},
+		DB: DB{
+			URL: vp.GetString("db_url"),
+		},
+		StopTimeout: timeout,
+		Migrations: Migrations{
+			Directory: migrationsDir,
+		},
+		Notify: subscribers,
+	}
+	return cfg
 }
 
 func (c *Cfg) ValidateConfig() error {

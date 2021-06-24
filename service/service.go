@@ -40,7 +40,7 @@ func New(ctx context.Context, cfg configuration.Cfg) (*Service, error) {
 
 	e := echo.New()
 	e.Use(
-		middleware.Logger(),
+		middleware.Logger(), // todo: change to service logger
 		middleware.Recover(),
 	)
 

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"os"
 	"os/signal"
 	"syscall"
@@ -19,25 +18,11 @@ import (
 func main() {
 	ctx, logger := middleware.LoggerFromContext(context.Background())
 
-	cfgPath := flag.String("cfg", "", "cfg file path")
-	flag.Parse()
-
-	if *cfgPath == "" {
-		logger.Fatalln("Config for service is not set")
-	}
-
-	vp := viper.New()
-	vp.SetConfigFile(*cfgPath)
+	vp := viper.NewWithOptions(viper.KeyDelimiter("_"))
 	vp.SetEnvPrefix("profile")
 	vp.AutomaticEnv()
-	if err := vp.ReadInConfig(); err != nil {
-		logger.WithError(err).Fatalln("Failed to read config")
-	}
 
-	var cfg configuration.Cfg
-	if err := vp.Unmarshal(&cfg); err != nil {
-		logger.WithError(err).Fatalln("Failed to decode config")
-	}
+	cfg := configuration.New(vp)
 
 	if err := cfg.ValidateConfig(); err != nil {
 		logger.WithError(err).Fatalln("Failed to validate config")
