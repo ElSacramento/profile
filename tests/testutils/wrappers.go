@@ -16,7 +16,7 @@ import (
 )
 
 func getURL(method string) string {
-	return fmt.Sprintf("http://%s%s", ServerAddr, method)
+	return fmt.Sprintf("http://%s%s", serverAddr, method)
 }
 
 func postRequest(t *testing.T, url string, reqBody interface{}, status int) []byte {

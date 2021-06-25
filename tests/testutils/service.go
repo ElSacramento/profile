@@ -28,15 +28,18 @@ var PostgresOptions = pg.Options{
 	ApplicationName: "test",
 }
 
-var PgURL = func(dbName string) string {
+var pgURL = func(dbName string) string {
 	return fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable&application_name=%s",
 		PostgresOptions.User, PostgresOptions.Password, PostgresOptions.Addr, dbName, PostgresOptions.ApplicationName)
 }
 
-var ServerAddr = "localhost:8080"
-var testDBName = "test_db"
+var (
+	serverAddr     = "localhost:8080"
+	testDBName     = "test_db"
+	subscriberAddr = ":50051"
+)
 
-func NewTestService(ctx context.Context, cfg configuration.Cfg, store storage.Storage) (*service.Service, error) {
+func newTestService(ctx context.Context, cfg configuration.Cfg, store storage.Storage) (*service.Service, error) {
 	ctx, logger := middleware2.LoggerFromContext(ctx)
 
 	e := echo.New()
@@ -46,7 +49,7 @@ func NewTestService(ctx context.Context, cfg configuration.Cfg, store storage.St
 	)
 
 	// todo: mock version
-	pushNotificator := grpc.New(ctx, configuration.Notify{})
+	pushNotificator := grpc.New(ctx, cfg.Notify)
 
 	server := api.NewServerWrapper(ctx, cfg.API, store, pushNotificator)
 	server.RegisterHandlers(e)
@@ -100,8 +103,8 @@ func RunWithServer(t *testing.T, fn func()) {
 	}()
 
 	cfg := configuration.Cfg{
-		API:         configuration.API{Listen: ServerAddr},
-		DB:          configuration.DB{URL: PgURL(testDBName)},
+		API:         configuration.API{Listen: serverAddr},
+		DB:          configuration.DB{URL: pgURL(testDBName)},
 		StopTimeout: time.Second * 60,
 		Migrations:  configuration.Migrations{Directory: "../storage/postgres/migrations"},
 	}
@@ -109,7 +112,7 @@ func RunWithServer(t *testing.T, fn func()) {
 	store, err := postgres.New(ctx, cfg.DB, cfg.Migrations)
 	require.NoError(t, err)
 
-	svc, err := NewTestService(ctx, cfg, store)
+	svc, err := newTestService(ctx, cfg, store)
 	require.NoError(t, err)
 
 	err = svc.Start()
@@ -119,5 +122,52 @@ func RunWithServer(t *testing.T, fn func()) {
 		err := svc.Stop(ctx)
 		require.NoError(t, err)
 	}()
+	fn()
+}
+
+func RunWithGRPCServer(t *testing.T, fn func()) {
+	ctx, _ := middleware2.LoggerFromContext(context.Background())
+
+	err := createDatabase()
+	require.NoError(t, err)
+
+	defer func() {
+		err := dropDatabase()
+		require.NoError(t, err)
+	}()
+
+	cfg := configuration.Cfg{
+		API:         configuration.API{Listen: serverAddr},
+		DB:          configuration.DB{URL: pgURL(testDBName)},
+		StopTimeout: time.Second * 60,
+		Migrations:  configuration.Migrations{Directory: "../storage/postgres/migrations"},
+		Notify:      []string{subscriberAddr},
+	}
+
+	var subscriber *server
+	go func() {
+		subscriber = startGRPCServer(subscriberAddr)
+	}()
+
+	defer func() {
+		if subscriber != nil {
+			subscriber.stopGRPCServer()
+		}
+	}()
+
+	store, err := postgres.New(ctx, cfg.DB, cfg.Migrations)
+	require.NoError(t, err)
+
+	svc, err := newTestService(ctx, cfg, store)
+	require.NoError(t, err)
+
+	err = svc.Start()
+	require.NoError(t, err)
+
+	defer func() {
+		err := svc.Stop(ctx)
+		require.NoError(t, err)
+	}()
+
 	fn()
 }

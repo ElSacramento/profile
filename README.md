@@ -14,6 +14,7 @@ Simple CRUD service for users with the ability to notify other subscribed servic
 - Write country service or find the better one.
 - GithubActions to run linter, tests, build a docker image.
 - Limit param for /users.
+- Check goroutines leaks.
 
 ## Run tests and linter
 `make test lint`

@@ -1,4 +1,4 @@
-package main
+package testutils
 
 import (
 	"context"
@@ -12,6 +12,8 @@ import (
 
 type server struct {
 	generated.UnimplementedNotifierServer
+
+	grpcServer *grpc.Server
 }
 
 func (s *server) Push(ctx context.Context, in *generated.NotificationRequest) (*generated.NotificationReply, error) {
@@ -22,17 +24,25 @@ func (s *server) Push(ctx context.Context, in *generated.NotificationRequest) (*
 }
 
 // For notification manual testing
-func main() {
+func startGRPCServer(addr string) *server {
 	_, logger := middleware.LoggerFromContext(context.Background())
 
-	lis, err := net.Listen("tcp", ":50051")
+	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		logger.WithError(err).Fatalln("failed to listen")
+		return nil
 	}
 	s := grpc.NewServer()
-	generated.RegisterNotifierServer(s, &server{})
+	srv := server{grpcServer: s}
+	generated.RegisterNotifierServer(s, &srv)
 	logger.Infof("server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		logger.WithError(err).Fatalln("failed to serve")
+		return nil
 	}
+	return &srv
+}
+
+func (s *server) stopGRPCServer() {
+	s.grpcServer.Stop()
 }
