@@ -31,6 +31,8 @@ type Cfg struct {
 }
 
 func New(vp *viper.Viper) Cfg {
+	// get everything from viper and use default values
+	// notice: unmarshal didn't work, but maybe the way of use was wrong
 	subscribers := make([]string, 0)
 	notify := vp.GetString("notify")
 	if notify != "" {
@@ -66,6 +68,7 @@ func New(vp *viper.Viper) Cfg {
 }
 
 func (c *Cfg) ValidateConfig() error {
+	// todo: logical validation for values
 	validate := validator.New()
 	if err := validate.Struct(c); err != nil {
 		return err

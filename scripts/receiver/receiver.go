@@ -4,9 +4,9 @@ import (
 	"context"
 	"net"
 
-	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
+	"github.com/profile/middleware"
 	"github.com/profile/notifier/generated"
 )
 
@@ -15,21 +15,24 @@ type server struct {
 }
 
 func (s *server) Push(ctx context.Context, in *generated.NotificationRequest) (*generated.NotificationReply, error) {
-	logrus.Infof("Received: operation %q id %q", in.GetOperation(), in.GetId())
+	_, logger := middleware.LoggerFromContext(ctx)
+
+	logger.Infof("Received: operation %q id %q", in.GetOperation(), in.GetId())
 	return &generated.NotificationReply{Message: "ok"}, nil
 }
 
 // For notification manual testing
 func main() {
-	// port from config.yaml
+	_, logger := middleware.LoggerFromContext(context.Background())
+
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
-		logrus.WithError(err).Fatalln("failed to listen")
+		logger.WithError(err).Fatalln("failed to listen")
 	}
 	s := grpc.NewServer()
 	generated.RegisterNotifierServer(s, &server{})
-	logrus.Infof("server listening at %v", lis.Addr())
+	logger.Infof("server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
-		logrus.WithError(err).Fatalln("failed to serve")
+		logger.WithError(err).Fatalln("failed to serve")
 	}
 }

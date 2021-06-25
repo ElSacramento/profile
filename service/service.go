@@ -69,6 +69,10 @@ func (s *Service) Start() error {
 		return errors.New("impossible state: no database")
 	}
 
+	if s.Notifier == nil {
+		return errors.New("impossible state: nil notifier")
+	}
+
 	go func() {
 		defer func() {
 			s.Logger.Info("HTTP server goroutine stopped")

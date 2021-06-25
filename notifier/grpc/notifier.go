@@ -25,9 +25,10 @@ func New(ctx context.Context, notify configuration.Notify) *Sender {
 	_, logger := middleware.LoggerFromContext(ctx)
 
 	clients := make([]generated.NotifierClient, 0)
-	connections := make([]*grpc.ClientConn, 0)
+	connections := make([]*grpc.ClientConn, 0) // store connections to close them, when needed
 
 	wg := &sync.WaitGroup{}
+	// use channels to not share logger between goroutines
 	msgChan := make(chan *grpc.ClientConn, len(notify))
 	errChan := make(chan error, len(notify))
 
@@ -74,8 +75,9 @@ func (n *Sender) Push(id uint64, opName notifier.Operation) {
 	n.logger.Infof("Send notification to %d listeners", len(n.clients))
 
 	wg := &sync.WaitGroup{}
-
+	// use channels to not share logger between goroutines
 	errChan := make(chan error, len(n.clients))
+
 	for _, client := range n.clients {
 		wg.Add(1)
 

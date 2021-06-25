@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"context"
 	"os"
 	"os/signal"
 	"syscall"
@@ -9,16 +10,18 @@ import (
 	"github.com/go-pg/pg/v10"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
-	"github.com/sirupsen/logrus"
 
+	"github.com/profile/middleware"
 	"github.com/profile/tests/testutils"
 )
 
 // great tool: https://github.com/ory/dockertest/blob/v3/examples/PostgreSQL.md
 func TestMain(m *testing.M) {
+	_, logger := middleware.LoggerFromContext(context.Background())
+
 	pool, err := dockertest.NewPool("")
 	if err != nil {
-		logrus.WithError(err).Fatalln("Could not connect to docker")
+		logger.WithError(err).Fatalln("Could not connect to docker")
 	}
 
 	opts := &dockertest.RunOptions{
@@ -37,13 +40,13 @@ func TestMain(m *testing.M) {
 	// pulls an image, creates a container based on it and runs it
 	resource, err := pool.RunWithOptions(opts)
 	if err != nil {
-		logrus.WithError(err).Fatalln("Could not start resource")
+		logger.WithError(err).Fatalln("Could not start resource")
 	}
 
 	var db *pg.DB
 	stopper := func() {
 		if err := db.Close(); err != nil {
-			logrus.WithError(err).Warn("Failed to close connection to postgres")
+			logger.WithError(err).Warn("Failed to close connection to postgres")
 		}
 	}
 
@@ -53,15 +56,15 @@ func TestMain(m *testing.M) {
 		_, err := db.Exec("select 1")
 		return err
 	}); err != nil {
-		logrus.WithError(err).Fatalln("Could not connect to docker")
+		logger.WithError(err).Fatalln("Could not connect to docker")
 	}
 
 	// todo: cleaning doesn't work during debug, need to fix it
 	cleaner := func() {
 		// When you're done, kill and remove the container
-		logrus.Info("Cleaning resource")
+		logger.Info("Cleaning resource")
 		if err = pool.Purge(resource); err != nil {
-			logrus.WithError(err).Fatalln("Could not purge resource")
+			logger.WithError(err).Fatalln("Could not purge resource")
 		}
 	}
 
@@ -71,7 +74,7 @@ func TestMain(m *testing.M) {
 
 	go func() {
 		s := <-gracefulStop
-		logrus.Infof("Got signal: %v", s)
+		logger.Infof("Got signal: %v", s)
 
 		stopper()
 		cleaner()

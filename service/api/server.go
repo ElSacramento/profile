@@ -22,6 +22,7 @@ type Server struct {
 }
 
 func NewServer(cfg configuration.API, db storage.Storage, logger *logrus.Entry, notificator notifier.Notifier) *Server {
+	// Convert all possible country names to one default for proper filter matching.
 	countryConverter := gountries.New()
 
 	return &Server{
@@ -33,6 +34,7 @@ func NewServer(cfg configuration.API, db storage.Storage, logger *logrus.Entry, 
 	}
 }
 
+// Create a user with required fields: `email`, `password`.
 func (s *Server) CreateUser(ctx echo.Context) error {
 	request := dto.CreateUser{}
 	if err := ctx.Bind(&request); err != nil {
@@ -66,6 +68,7 @@ func (s *Server) CreateUser(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, dto.UserFromDatabase(created))
 }
 
+// Update user's fields, all of them can be updated, but `email`,`password` shouldn't be empty.
 func (s *Server) UpdateUser(ctx echo.Context, id uint64) error {
 	request := dto.UpdateUser{}
 	if err := ctx.Bind(&request); err != nil {
@@ -103,6 +106,7 @@ func (s *Server) UpdateUser(ctx echo.Context, id uint64) error {
 	return ctx.JSON(http.StatusOK, dto.UserFromDatabase(updated))
 }
 
+// Delete user.
 func (s *Server) DeleteUser(ctx echo.Context, id uint64) error {
 	ok, err := s.db.Delete(id)
 	if err != nil {
@@ -119,6 +123,7 @@ func (s *Server) DeleteUser(ctx echo.Context, id uint64) error {
 	return ctx.JSON(http.StatusNoContent, struct{}{})
 }
 
+// Get user info.
 func (s *Server) User(ctx echo.Context, id uint64) error {
 	dbUser, err := s.db.Get(id)
 	if err == storage.ErrNotFound {
@@ -134,6 +139,8 @@ func (s *Server) User(ctx echo.Context, id uint64) error {
 	return ctx.JSON(http.StatusOK, dto.UserFromDatabase(dbUser))
 }
 
+// List users, filter by country is supported.
+// todo: limit, offset for pages and bucket requests
 func (s *Server) Users(ctx echo.Context, filter dto.Filter) error {
 	if filter.Country != "" {
 		country, err := s.country.FindCountryByName(filter.Country)

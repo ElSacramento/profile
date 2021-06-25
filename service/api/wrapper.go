@@ -15,6 +15,7 @@ import (
 	"github.com/profile/storage"
 )
 
+// Use wrapper to parse query params.
 type ServerWrapper struct {
 	srv    *Server
 	logger *logrus.Entry

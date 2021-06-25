@@ -14,10 +14,10 @@ import (
 	"github.com/profile/service"
 )
 
-// todo: make function smaller
 func main() {
 	ctx, logger := middleware.LoggerFromContext(context.Background())
 
+	// initialize config and validate
 	vp := viper.NewWithOptions(viper.KeyDelimiter("_"))
 	vp.SetEnvPrefix("profile")
 	vp.AutomaticEnv()
@@ -28,6 +28,7 @@ func main() {
 		logger.WithError(err).Fatalln("Failed to validate config")
 	}
 
+	// create service and start
 	srv, err := service.New(ctx, cfg)
 	if err != nil {
 		logger.WithError(err).Fatalln("Failed to initialize service")

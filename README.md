@@ -22,4 +22,6 @@ Simple CRUD service for users with the ability to notify other subscribed servic
 ```
 docker compose build
 docker compose up
+
+curl -v -X POST "http://localhost:8080/users" -H "Content-Type: application/json" -d '{"email": "test@mail.ru", "password":"pwd"}'
 ```

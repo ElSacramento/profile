@@ -11,6 +11,7 @@ type loggerKey string
 
 var keyName loggerKey = "logger"
 
+// Get logger from context or create the default one.
 func LoggerFromContext(ctx context.Context) (context.Context, *logrus.Entry) {
 	found, ok := ctx.Value(keyName).(*logrus.Entry)
 	if ok {

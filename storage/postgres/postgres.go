@@ -27,6 +27,7 @@ func New(ctx context.Context, cfg configuration.DB, migrations configuration.Mig
 	}
 
 	db := pg.Connect(opt)
+	// ping is needed to wait while database is starting
 	if err := pingLoop(db, logger); err != nil {
 		return nil, err
 	}
