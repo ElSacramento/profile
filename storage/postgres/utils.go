@@ -26,7 +26,7 @@ func pingLoop(db *pg.DB, logger *logrus.Entry) error {
 		case <-time.After(timeout):
 			return fmt.Errorf("db ping failed after %s timeout", timeout)
 		case <-ticker.C:
-			logger.Warn("db ping failed, sleep and retry")
+			logger.Warnf("db ping failed, sleep and retry, err: %s", err.Error())
 		}
 	}
 }
