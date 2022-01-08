@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: backend
+  name: backend
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - image: profile:latest
+        imagePullPolicy: Never
+        name: backend
+        resources:
+          requests:
+            cpu: "0.5"
+            memory: "1G"
+          limits:
+            cpu: "0.5"
+            memory: "1G"
+        env:
+        - name: PROFILE_API_LISTEN
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config-v5
+              key: apiListen
+        - name: PROFILE_DB_URL
+          valueFrom:
+            secretKeyRef:
+              name: postgres-db-url
+              key: db-url
+        volumeMounts:
+        - name: postgres-db-url
+          readOnly: true
+          mountPath: /etc/postgres-db-url
+      volumes:
+        - name: postgres-db-url
+          secret:
+            secretName: postgres-db-url
